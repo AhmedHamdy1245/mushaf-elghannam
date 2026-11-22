@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.MushafApp" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#0F5C44</item>
+        <item name="colorPrimaryDark">#0B4734</item>
+        <item name="colorAccent">#B4883E</item>
+        <item name="android:statusBarColor">#0F5C44</item>
+    </style>
+</resources>
