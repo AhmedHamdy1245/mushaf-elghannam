@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المصحف الشريف — صدقة جارية على روح الدكتور/ محمود محمد فؤاد الغنام</title>
+  <title>المصحف الشريف — القرآن الكريم والأذكار والسبحة</title>
   <meta name="application-name" content="المصحف الشريف" />
   <meta name="theme-color" content="#0f5c44" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -214,6 +214,66 @@
       animation: pulseSoft 1.4s ease-in-out infinite;
       border-radius: 0.5rem;
     }
+    .mushaf-swipe-stage {
+      perspective: 1400px;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    #mushafContainer {
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      transform-origin: center center;
+      will-change: transform, opacity;
+    }
+
+    @keyframes flipPageNext {
+      0% { opacity: 0.45; transform: translateX(-28px) rotateY(-5deg); }
+      100% { opacity: 1; transform: translateX(0) rotateY(0); }
+    }
+
+    @keyframes flipPagePrev {
+      0% { opacity: 0.45; transform: translateX(28px) rotateY(5deg); }
+      100% { opacity: 1; transform: translateX(0) rotateY(0); }
+    }
+
+    .anim-flip-next {
+      animation: flipPageNext 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .anim-flip-prev {
+      animation: flipPagePrev 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tasbih-orb {
+      background: radial-gradient(circle at 35% 30%, var(--accent) 0%, var(--accent-hover) 100%);
+      box-shadow: 0 14px 32px rgba(15, 92, 68, 0.28), inset 0 2px 6px rgba(255, 255, 255, 0.22);
+      transition: transform 0.1s ease, box-shadow 0.15s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tasbih-orb:active,
+    .tasbih-orb.is-pressed {
+      transform: scale(0.94);
+      box-shadow: 0 6px 16px rgba(15, 92, 68, 0.32), inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .dhikr-card {
+      transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.12s ease;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dhikr-card:active {
+      transform: scale(0.99);
+    }
+
+    .dhikr-card.is-done {
+      opacity: 0.72;
+      border-color: var(--accent) !important;
+      background-color: var(--accent-soft) !important;
+    }
   </style>
 </head>
 <body class="flex flex-col min-h-screen overflow-x-hidden">
@@ -239,14 +299,20 @@
     </div>
 
     <!-- Mode Switcher -->
-    <div class="flex items-center rounded-xl p-1 border shrink-0" style="border-color: var(--border-color); background-color: var(--bg-app);">
-      <button id="btnModePage" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition tab-active">
-        صفحة المصحف
+    <nav aria-label="أقسام التطبيق" class="flex items-center rounded-xl p-1 border shrink-0 overflow-x-auto max-w-full" style="border-color: var(--border-color); background-color: var(--bg-app);">
+      <button id="btnModePage" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap tab-active">
+        المصحف
       </button>
-      <button id="btnModeSurah" type="button" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition tab-inactive">
-        السور والتفسير
+      <button id="btnModeSurah" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap tab-inactive">
+        السور
       </button>
-    </div>
+      <button id="btnModeAdhkar" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap tab-inactive">
+        الأذكار
+      </button>
+      <button id="btnModeTasbih" type="button" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap tab-inactive">
+        السبحة
+      </button>
+    </nav>
 
     <!-- Action Buttons -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -319,7 +385,7 @@
     <!-- Main Reading Area -->
     <main class="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 flex flex-col items-center">
       <!-- Quick Reading Controls Bar -->
-      <div class="w-full max-w-4xl mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div id="quranControlsBar" class="w-full max-w-4xl mb-4 flex flex-wrap items-center justify-between gap-2">
         <!-- Page / Surah Quick Jump -->
         <div class="flex items-center gap-2 flex-wrap">
           <button id="btnPrevNav" type="button" class="btn-subtle rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold flex items-center gap-1">
@@ -370,28 +436,9 @@
         <button id="btnRetryFetch" type="button" class="btn-primary rounded-lg px-3 py-1 text-xs font-semibold shrink-0">إعادة المحاولة</button>
       </div>
 
-      <!-- Sadaqah Jariyah Dedication Banner -->
-      <section id="dedicationBanner" aria-label="صدقة جارية" class="w-full max-w-4xl mb-4 rounded-2xl px-4 sm:px-6 py-3.5 border text-center relative overflow-hidden" style="background: linear-gradient(135deg, var(--gold-soft) 0%, var(--bg-paper) 50%, var(--accent-soft) 100%); border-color: var(--gold);">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div class="flex-1 text-center sm:text-right">
-            <div class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full mb-1" style="background-color: var(--accent-soft); color: var(--accent);">
-              <span>صدقة جارية</span>
-            </div>
-            <h2 class="text-sm sm:text-base font-bold leading-snug" style="color: var(--text-primary);">
-              صدقة جارية على روح الدكتور/ محمود محمد فؤاد الغنام
-            </h2>
-            <p class="text-xs mt-1 leading-relaxed" style="color: var(--text-secondary);">
-              اللهم اغفر له وارحمه، وعافه واعفُ عنه، وأكرم نزله، ووسّع مدخله، واجعل القرآن الكريم شفيعاً له ونوراً في قبره.
-            </p>
-          </div>
-          <button id="btnOpenDuaModal" type="button" class="btn-primary rounded-xl px-3.5 py-2 text-xs font-semibold shrink-0 flex items-center gap-1.5 shadow-sm">
-            <span>دعاء للمرحوم</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- Mushaf Reading Container -->
-      <article id="mushafContainer" class="w-full max-w-4xl mushaf-card rounded-2xl p-3 sm:p-6">
+      <!-- Mushaf Reading Container (Swipeable Left/Right) -->
+      <div id="mushafSwipeStage" class="w-full max-w-4xl mushaf-swipe-stage">
+      <article id="mushafContainer" class="w-full mushaf-card rounded-2xl p-3 sm:p-6">
         <div class="mushaf-inner-frame p-4 sm:p-7 md:p-9">
           <!-- Page Meta Header -->
           <div class="flex items-center justify-between text-xs sm:text-sm pb-3 mb-5 border-b" style="border-color: var(--border-color); color: var(--text-secondary);">
@@ -410,11 +457,112 @@
           </div>
         </div>
       </article>
+      </div>
+
+      <!-- Adhkar Section (Morning & Evening) -->
+      <section id="adhkarSection" class="hidden w-full max-w-4xl space-y-4">
+        <div class="mushaf-card rounded-2xl p-4 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-bold" style="color: var(--accent);">أذكار الصباح والمساء</h2>
+              <p class="text-xs sm:text-sm" style="color: var(--text-secondary);">اضغط على بطاقة الذكر للعد حتى يكتمل</p>
+            </div>
+            <div class="flex items-center rounded-xl p-1 border" style="border-color: var(--border-color); background-color: var(--bg-app);">
+              <button id="btnAdhkarMorning" type="button" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition tab-active">
+                أذكار الصباح
+              </button>
+              <button id="btnAdhkarEvening" type="button" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition tab-inactive">
+                أذكار المساء
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Row -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span id="adhkarProgressText" class="font-bold" style="color: var(--accent);">٠ / ١٢ ذكر مكتمل</span>
+              <button id="btnResetAdhkar" type="button" class="text-xs font-semibold hover:underline" style="color: var(--text-secondary);">إعادة ضبط العدادات</button>
+            </div>
+            <div class="w-full h-2.5 rounded-full overflow-hidden" style="background-color: var(--border-color);">
+              <div id="adhkarProgressBar" class="h-full rounded-full transition-all duration-300" style="width: 0%; background-color: var(--accent);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="adhkarList" class="space-y-3"></div>
+      </section>
+
+      <!-- Electronic Tasbih Section -->
+      <section id="tasbihSection" class="hidden w-full max-w-2xl space-y-4">
+        <div class="mushaf-card rounded-2xl p-5 sm:p-7 space-y-5 text-center">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b" style="border-color: var(--border-color);">
+            <div class="text-right">
+              <h2 class="text-lg sm:text-xl font-bold" style="color: var(--accent);">السبحة الإلكترونية</h2>
+              <p class="text-xs" style="color: var(--text-secondary);">اضغط على الدائرة أو مفتاح المسافة للتسبيح</p>
+            </div>
+            <button id="btnTasbihSound" type="button" class="btn-subtle rounded-lg px-3 py-1.5 text-xs font-semibold">
+              الصوت والاهتزاز: مفعل
+            </button>
+          </div>
+
+          <!-- Dhikr Chips -->
+          <div id="tasbihChips" class="flex flex-wrap items-center justify-center gap-1.5"></div>
+
+          <!-- Custom Dhikr Input -->
+          <div class="flex items-center gap-2 max-w-md mx-auto">
+            <input id="customDhikrInput" type="text" placeholder="أضف ذكراً مخصصاً..." class="flex-1 rounded-xl px-3 py-2 text-xs sm:text-sm border outline-none" style="background-color: var(--bg-panel); border-color: var(--border-color); color: var(--text-primary);" />
+            <button id="btnAddCustomDhikr" type="button" class="btn-subtle rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">إضافة</button>
+          </div>
+
+          <!-- Active Dhikr Display -->
+          <div class="py-1">
+            <div id="tasbihActivePhrase" class="quran-text text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">سبحان الله</div>
+          </div>
+
+          <!-- Interactive Circular Counter with Progress Ring -->
+          <div class="relative inline-flex items-center justify-center my-2">
+            <svg class="w-56 h-56 -rotate-90" viewBox="0 0 220 220" aria-hidden="true">
+              <circle cx="110" cy="110" r="96" fill="none" stroke="var(--border-color)" stroke-width="10" />
+              <circle id="tasbihRing" cx="110" cy="110" r="96" fill="none" stroke="var(--gold)" stroke-width="10" stroke-linecap="round" stroke-dasharray="603.19" stroke-dashoffset="603.19" style="transition: stroke-dashoffset 0.2s ease;" />
+            </svg>
+            <button id="btnTasbihTap" type="button" aria-label="تسبيح" class="tasbih-orb absolute w-44 h-44 rounded-full flex flex-col items-center justify-center text-white cursor-pointer">
+              <span id="tasbihCountDisplay" class="text-5xl font-bold leading-none">٠</span>
+              <span id="tasbihTargetDisplay" class="text-xs mt-2 opacity-90">الهدف: ٣٣</span>
+            </button>
+          </div>
+
+          <!-- Target Selector -->
+          <div class="flex items-center justify-center gap-1.5 flex-wrap">
+            <span class="text-xs font-semibold ml-1" style="color: var(--text-secondary);">الهدف:</span>
+            <button type="button" data-tasbih-target="33" class="tasbih-target-btn px-3 py-1 rounded-lg text-xs font-bold tab-active">٣٣</button>
+            <button type="button" data-tasbih-target="99" class="tasbih-target-btn px-3 py-1 rounded-lg text-xs font-bold tab-inactive">٩٩</button>
+            <button type="button" data-tasbih-target="100" class="tasbih-target-btn px-3 py-1 rounded-lg text-xs font-bold tab-inactive">١٠٠</button>
+            <button type="button" data-tasbih-target="0" class="tasbih-target-btn px-3 py-1 rounded-lg text-xs font-bold tab-inactive">مفتوح</button>
+          </div>
+
+          <!-- Stats & Reset -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div class="rounded-xl p-3 border" style="background-color: var(--bg-panel); border-color: var(--border-color);">
+              <div class="text-xs" style="color: var(--text-secondary);">عدد الدورات</div>
+              <div id="tasbihRoundsDisplay" class="text-xl font-bold mt-0.5" style="color: var(--accent);">٠</div>
+            </div>
+            <div class="rounded-xl p-3 border" style="background-color: var(--bg-panel); border-color: var(--border-color);">
+              <div class="text-xs" style="color: var(--text-secondary);">الإجمالي الكلي</div>
+              <div id="tasbihTotalDisplay" class="text-xl font-bold mt-0.5" style="color: var(--gold);">٠</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 pt-1">
+            <button id="btnTasbihReset" type="button" class="btn-subtle rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold">تصفير العداد الحالي</button>
+            <button id="btnTasbihResetAll" type="button" class="text-xs font-semibold text-red-600 hover:underline px-2 py-2">تصفير الإجمالي</button>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
   <!-- Fixed Bottom Audio Player -->
-  <footer class="fixed bottom-0 inset-x-0 z-30 panel-surface border-t px-3 sm:px-5 py-2.5 shadow-lg">
+  <footer id="audioFooter" class="fixed bottom-0 inset-x-0 z-30 panel-surface border-t px-3 sm:px-5 py-2.5 shadow-lg">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
       <!-- Active Ayah Info -->
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
@@ -570,32 +718,6 @@
     </div>
   </div>
 
-  <!-- Sadaqah Jariyah & Dua Modal -->
-  <div id="duaModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-3">
-    <div class="w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden" style="background-color: var(--bg-paper); border-color: var(--gold);">
-      <div class="px-5 py-3.5 border-b flex items-center justify-between" style="border-color: var(--border-color); background-color: var(--bg-panel);">
-        <h3 class="font-bold text-sm sm:text-base" style="color: var(--accent);">صدقة جارية على روح د. محمود محمد فؤاد الغنام</h3>
-        <button id="btnCloseDuaModal" type="button" class="btn-subtle rounded-lg p-1.5" aria-label="إغلاق">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="p-5 space-y-3.5 text-sm leading-relaxed max-h-[70vh] overflow-y-auto custom-scroll">
-        <p class="text-center font-bold text-base" style="color: var(--text-primary);">
-          صدقة جارية على روح الدكتور/ محمود محمد فؤاد الغنام
-        </p>
-        <div class="rounded-xl p-4 border space-y-2.5" style="background-color: var(--bg-panel); border-color: var(--border-color);">
-          <p>«اللهم اغفر له وارحمه، وعافه واعفُ عنه، وأكرم نزله، ووسّع مدخله، واغسله بالماء والثلج والبرد، ونقِّه من الخطايا كما نقّيت الثوب الأبيض من الدنس».</p>
-          <p>«اللهم أبدله داراً خيراً من داره، وأهلاً خيراً من أهله، وأدخله الجنة وأعذه من عذاب القبر ومن عذاب النار».</p>
-          <p>«اللهم اجعل قراءتنا للقرآن الكريم ونفع هذا المصحف في ميزان حسناته، وارفع درجته في المهديين، واجعل قبره روضةً من رياض الجنة».</p>
-        </div>
-      </div>
-      <div class="px-5 py-3 border-t flex items-center justify-between gap-2" style="border-color: var(--border-color); background-color: var(--bg-panel);">
-        <button id="btnCopyDua" type="button" class="btn-primary rounded-lg px-4 py-2 text-xs font-semibold">نسخ الدعاء</button>
-        <button id="btnCloseDuaModalBottom" type="button" class="btn-subtle rounded-lg px-4 py-2 text-xs font-semibold">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification -->
   <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white shadow-lg" style="background-color: var(--accent);"></div>
 
@@ -642,7 +764,26 @@
       };
 
       const state = {
+        section: 'quran', // 'quran' | 'adhkar' | 'tasbih'
         mode: 'page', // 'page' | 'surah'
+        adhkarPeriod: 'morning', // 'morning' | 'evening'
+        adhkarProgress: { morning: {}, evening: {} },
+        tasbihPhrases: [
+          'سبحان الله',
+          'الحمد لله',
+          'الله أكبر',
+          'لا إله إلا الله',
+          'أستغفر الله العظيم',
+          'اللهم صلِّ وسلِّم على نبينا محمد',
+          'لا حول ولا قوة إلا بالله',
+          'سبحان الله وبحمده، سبحان الله العظيم'
+        ],
+        tasbihIndex: 0,
+        tasbihCount: 0,
+        tasbihTarget: 33,
+        tasbihRounds: 0,
+        tasbihTotal: 0,
+        tasbihSound: true,
         currentPage: 1,
         currentSurah: 1,
         sidebarTab: 'surahs', // 'surahs' | 'juz' | 'bookmarks'
@@ -802,7 +943,14 @@
             showTafsirInline: state.showTafsirInline,
             bookmarks: state.bookmarks,
             readPages: state.readPages,
-            lastRead: state.lastRead
+            lastRead: state.lastRead,
+            tasbihPhrases: state.tasbihPhrases,
+            tasbihIndex: state.tasbihIndex,
+            tasbihCount: state.tasbihCount,
+            tasbihTarget: state.tasbihTarget,
+            tasbihRounds: state.tasbihRounds,
+            tasbihTotal: state.tasbihTotal,
+            tasbihSound: state.tasbihSound
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         } catch (e) {}
@@ -823,6 +971,13 @@
           if (Array.isArray(parsed.bookmarks)) state.bookmarks = parsed.bookmarks;
           if (Array.isArray(parsed.readPages)) state.readPages = parsed.readPages;
           if (parsed.lastRead) state.lastRead = parsed.lastRead;
+          if (Array.isArray(parsed.tasbihPhrases) && parsed.tasbihPhrases.length) state.tasbihPhrases = parsed.tasbihPhrases;
+          if (typeof parsed.tasbihIndex === 'number' && parsed.tasbihIndex >= 0 && parsed.tasbihIndex < state.tasbihPhrases.length) state.tasbihIndex = parsed.tasbihIndex;
+          if (typeof parsed.tasbihCount === 'number' && parsed.tasbihCount >= 0) state.tasbihCount = parsed.tasbihCount;
+          if (typeof parsed.tasbihTarget === 'number') state.tasbihTarget = parsed.tasbihTarget;
+          if (typeof parsed.tasbihRounds === 'number' && parsed.tasbihRounds >= 0) state.tasbihRounds = parsed.tasbihRounds;
+          if (typeof parsed.tasbihTotal === 'number' && parsed.tasbihTotal >= 0) state.tasbihTotal = parsed.tasbihTotal;
+          if (typeof parsed.tasbihSound === 'boolean') state.tasbihSound = parsed.tasbihSound;
         } catch (e) {}
       }
 
@@ -1037,6 +1192,7 @@
 
       async function loadPage(pageNum, highlightGlobalAyah) {
         pageNum = Math.max(1, Math.min(604, Number(pageNum) || 1));
+        state.section = 'quran';
         state.mode = 'page';
         state.currentPage = pageNum;
         stopAudio(false);
@@ -1076,6 +1232,7 @@
 
       async function loadSurah(surahNum, highlightAyahInSurah) {
         surahNum = Math.max(1, Math.min(114, Number(surahNum) || 1));
+        state.section = 'quran';
         state.mode = 'surah';
         state.currentSurah = surahNum;
         stopAudio(false);
@@ -1173,7 +1330,7 @@
         els.pageMetaRight.textContent = titleSummary;
         els.pageMetaLeft.textContent = 'الجزء ' + toArabicDigits(juzNum) + ' • صفحة ' + toArabicDigits(state.currentPage);
         els.pageFooterNumber.textContent = toArabicDigits(state.currentPage);
-        els.pageFooterHint.textContent = 'انقر على أي آية لعرض التفسير الميسر أو الاستماع إليها';
+        els.pageFooterHint.textContent = 'اسحب يميناً للتالية • يساراً للسابقة • انقر على أي آية للتفسير';
 
         state.lastRead = {
           mode: 'page',
@@ -1289,14 +1446,37 @@
       }
 
       function updateModeButtons() {
-        var isPage = state.mode === 'page';
-        els.btnModePage.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition ' + (isPage ? 'tab-active' : 'tab-inactive');
-        els.btnModeSurah.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition ' + (!isPage ? 'tab-active' : 'tab-inactive');
-        els.pageJumpWrap.classList.toggle('hidden', !isPage);
-        els.btnToggleTafsir.classList.toggle('hidden', isPage);
-        els.prevNavLabel.textContent = isPage ? 'الصفحة السابقة' : 'السورة السابقة';
-        els.nextNavLabel.textContent = isPage ? 'الصفحة التالية' : 'السورة التالية';
-        els.btnToggleTafsir.textContent = state.showTafsirInline ? 'إخفاء التفسير الميسر' : 'إظهار التفسير الميسر';
+        var isQuran = state.section === 'quran';
+        var isPage = isQuran && state.mode === 'page';
+        var isSurah = isQuran && state.mode === 'surah';
+        var isAdhkar = state.section === 'adhkar';
+        var isTasbih = state.section === 'tasbih';
+
+        var baseCls = 'px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap ';
+        els.btnModePage.className = baseCls + (isPage ? 'tab-active' : 'tab-inactive');
+        els.btnModeSurah.className = baseCls + (isSurah ? 'tab-active' : 'tab-inactive');
+        var btnAdhkar = document.getElementById('btnModeAdhkar');
+        var btnTasbih = document.getElementById('btnModeTasbih');
+        if (btnAdhkar) btnAdhkar.className = baseCls + (isAdhkar ? 'tab-active' : 'tab-inactive');
+        if (btnTasbih) btnTasbih.className = baseCls + (isTasbih ? 'tab-active' : 'tab-inactive');
+
+        document.getElementById('quranControlsBar').classList.toggle('hidden', !isQuran);
+        document.getElementById('mushafSwipeStage').classList.toggle('hidden', !isQuran);
+        document.getElementById('audioFooter').classList.toggle('hidden', !isQuran);
+        document.getElementById('adhkarSection').classList.toggle('hidden', !isAdhkar);
+        document.getElementById('tasbihSection').classList.toggle('hidden', !isTasbih);
+
+        if (isQuran) {
+          els.pageJumpWrap.classList.toggle('hidden', !isPage);
+          els.btnToggleTafsir.classList.toggle('hidden', isPage);
+          els.prevNavLabel.textContent = isPage ? 'الصفحة السابقة' : 'السورة السابقة';
+          els.nextNavLabel.textContent = isPage ? 'الصفحة التالية' : 'السورة التالية';
+          els.btnToggleTafsir.textContent = state.showTafsirInline ? 'إخفاء التفسير الميسر' : 'إظهار التفسير الميسر';
+        } else if (isAdhkar) {
+          els.headerSubtitle.textContent = state.adhkarPeriod === 'morning' ? 'أذكار الصباح' : 'أذكار المساء';
+        } else if (isTasbih) {
+          els.headerSubtitle.textContent = 'السبحة الإلكترونية';
+        }
       }
 
       // Highlighting & Audio Player
@@ -1541,13 +1721,15 @@
 
       // Reading Mode Switch
       els.btnModePage.addEventListener('click', function () {
-        if (state.mode === 'page') return;
+        if (state.section === 'quran' && state.mode === 'page') return;
+        state.section = 'quran';
         var targetPage = state.currentAyahs[0] ? state.currentAyahs[0].page : state.currentPage;
         loadPage(targetPage);
       });
 
       els.btnModeSurah.addEventListener('click', function () {
-        if (state.mode === 'surah') return;
+        if (state.section === 'quran' && state.mode === 'surah') return;
+        state.section = 'quran';
         var targetSurah = (state.currentAyahs[0] && state.currentAyahs[0].surah)
           ? state.currentAyahs[0].surah.number
           : state.currentSurah;
@@ -1831,40 +2013,568 @@
           els.searchModal.classList.remove('flex');
           els.settingsModal.classList.add('hidden');
           els.settingsModal.classList.remove('flex');
-          closeDuaModal();
-        } else if (e.key === 'ArrowLeft') {
-          els.btnNextNav.click();
-        } else if (e.key === 'ArrowRight') {
-          els.btnPrevNav.click();
+        } else if (state.section === 'quran' && e.key === 'ArrowLeft') {
+          triggerPageFlip('next');
+        } else if (state.section === 'quran' && e.key === 'ArrowRight') {
+          triggerPageFlip('prev');
         } else if (e.code === 'Space') {
           e.preventDefault();
-          els.btnAudioPlay.click();
+          if (state.section === 'tasbih') {
+            document.getElementById('btnTasbihTap').click();
+          } else if (state.section === 'quran') {
+            els.btnAudioPlay.click();
+          }
         }
       });
 
-      // Dua Modal Listeners
-      var duaModal = document.getElementById('duaModal');
-      var btnOpenDuaModal = document.getElementById('btnOpenDuaModal');
-      var btnCloseDuaModal = document.getElementById('btnCloseDuaModal');
-      var btnCloseDuaModalBottom = document.getElementById('btnCloseDuaModalBottom');
-      var btnCopyDua = document.getElementById('btnCopyDua');
+      // ============================================================
+      // 1. Swipe Right / Left Page Flip for Mushaf
+      // ============================================================
+      var mushafContainerEl = document.getElementById('mushafContainer');
+      var swipeState = { active: false, startX: 0, startY: 0, dx: 0, lockedAxis: null, justSwiped: false };
 
-      function openDuaModal() {
-        duaModal.classList.remove('hidden');
-        duaModal.classList.add('flex');
+      function animateMushafFlip(dir) {
+        mushafContainerEl.classList.remove('anim-flip-next', 'anim-flip-prev');
+        void mushafContainerEl.offsetWidth;
+        mushafContainerEl.classList.add(dir === 'next' ? 'anim-flip-next' : 'anim-flip-prev');
       }
-      function closeDuaModal() {
-        duaModal.classList.add('hidden');
-        duaModal.classList.remove('flex');
+
+      function triggerPageFlip(dir) {
+        if (state.section !== 'quran') return;
+        if (dir === 'next') {
+          if (state.mode === 'page') {
+            if (state.currentPage < 604) {
+              animateMushafFlip('next');
+              loadPage(state.currentPage + 1);
+            } else {
+              showToast('أنت في الصفحة الأخيرة من المصحف');
+            }
+          } else {
+            if (state.currentSurah < 114) {
+              animateMushafFlip('next');
+              loadSurah(state.currentSurah + 1);
+            } else {
+              showToast('أنت في السورة الأخيرة (الناس)');
+            }
+          }
+        } else {
+          if (state.mode === 'page') {
+            if (state.currentPage > 1) {
+              animateMushafFlip('prev');
+              loadPage(state.currentPage - 1);
+            } else {
+              showToast('أنت في الصفحة الأولى من المصحف');
+            }
+          } else {
+            if (state.currentSurah > 1) {
+              animateMushafFlip('prev');
+              loadSurah(state.currentSurah - 1);
+            } else {
+              showToast('أنت في السورة الأولى (الفاتحة)');
+            }
+          }
+        }
       }
-      btnOpenDuaModal.addEventListener('click', openDuaModal);
-      btnCloseDuaModal.addEventListener('click', closeDuaModal);
-      btnCloseDuaModalBottom.addEventListener('click', closeDuaModal);
-      duaModal.addEventListener('click', function (e) {
-        if (e.target === duaModal) closeDuaModal();
+
+      // Guard clicks right after a horizontal swipe so Ayah modal doesn't open accidentally
+      els.readingContent.addEventListener('click', function (e) {
+        if (swipeState.justSwiped) {
+          e.stopPropagation();
+          e.preventDefault();
+          swipeState.justSwiped = false;
+        }
+      }, true);
+
+      function onSwipeStart(x, y) {
+        swipeState.active = true;
+        swipeState.startX = x;
+        swipeState.startY = y;
+        swipeState.dx = 0;
+        swipeState.lockedAxis = null;
+        mushafContainerEl.style.transition = 'none';
+      }
+
+      function onSwipeMove(x, y) {
+        if (!swipeState.active) return;
+        var dx = x - swipeState.startX;
+        var dy = y - swipeState.startY;
+        if (!swipeState.lockedAxis) {
+          if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
+            swipeState.lockedAxis = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'x' : 'y';
+          }
+        }
+        if (swipeState.lockedAxis === 'x') {
+          swipeState.dx = dx;
+          var damped = Math.max(-70, Math.min(70, dx * 0.35));
+          var tilt = damped * 0.06;
+          mushafContainerEl.style.transform = 'translateX(' + damped + 'px) rotateY(' + tilt + 'deg)';
+        }
+      }
+
+      function onSwipeEnd() {
+        if (!swipeState.active) return;
+        swipeState.active = false;
+        mushafContainerEl.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+        mushafContainerEl.style.transform = '';
+        if (swipeState.lockedAxis === 'x' && Math.abs(swipeState.dx) > 55) {
+          swipeState.justSwiped = true;
+          setTimeout(function () { swipeState.justSwiped = false; }, 260);
+          // In RTL Arabic Mushaf: swipe right (dx > 0) turns page forward (next), swipe left (dx < 0) turns back (prev)
+          if (swipeState.dx > 0) {
+            triggerPageFlip('next');
+          } else {
+            triggerPageFlip('prev');
+          }
+        }
+      }
+
+      mushafContainerEl.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 1) onSwipeStart(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      mushafContainerEl.addEventListener('touchmove', function (e) {
+        if (e.touches.length === 1) onSwipeMove(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+      mushafContainerEl.addEventListener('touchend', onSwipeEnd, { passive: true });
+      mushafContainerEl.addEventListener('touchcancel', onSwipeEnd, { passive: true });
+
+      // Mouse drag support for desktop preview
+      mushafContainerEl.addEventListener('mousedown', function (e) {
+        if (e.button === 0) onSwipeStart(e.clientX, e.clientY);
       });
-      btnCopyDua.addEventListener('click', function () {
-        copyText('صدقة جارية على روح الدكتور/ محمود محمد فؤاد الغنام — اللهم اغفر له وارحمه وعافه واعف عنه وأكرم نزله ووسع مدخله واجعل القرآن الكريم شفيعاً له ونوراً في قبره.');
+      window.addEventListener('mousemove', function (e) {
+        if (swipeState.active) onSwipeMove(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', function () {
+        if (swipeState.active) onSwipeEnd();
+      });
+
+      // ============================================================
+      // 2. Adhkar Al-Sabah & Al-Masa (Morning & Evening Adhkar)
+      // ============================================================
+      const ADHKAR_DATA = {
+        morning: [
+          {
+            id: 'm1',
+            title: 'آية الكرسي',
+            text: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ.',
+            virtue: 'من قالها حين يصبح أُجير من الجن حتى يمسي.',
+            count: 1
+          },
+          {
+            id: 'm2',
+            title: 'المعوذات (الإخلاص والفلق والناس)',
+            text: 'قراءة سورة الإخلاص (قُلْ هُوَ اللَّهُ أَحَدٌ...) وسورة الفلق (قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ...) وسورة الناس (قُلْ أَعُوذُ بِرَبِّ النَّاسِ...).',
+            virtue: 'من قالها ثلاث مرات حين يصبح وحين يمسي كفته من كل شيء.',
+            count: 3
+          },
+          {
+            id: 'm3',
+            title: 'أصبحنا وأصبح الملك لله',
+            text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.',
+            virtue: 'من أذكار الصباح الثابتة في صحيح مسلم.',
+            count: 1
+          },
+          {
+            id: 'm4',
+            title: 'سيد الاستغفار',
+            text: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.',
+            virtue: 'من قالها موقناً بها حين يصبح فمات من يومه دخل الجنة.',
+            count: 1
+          },
+          {
+            id: 'm5',
+            title: 'اللهم بك أصبحنا',
+            text: 'اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ.',
+            virtue: 'ذكر الاستفتاح الصباحي والتوكل على الله.',
+            count: 1
+          },
+          {
+            id: 'm6',
+            title: 'بسم الله الذي لا يضر مع اسمه شيء',
+            text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.',
+            virtue: 'من قالها ثلاثاً لم يضره شيء بإذن الله.',
+            count: 3
+          },
+          {
+            id: 'm7',
+            title: 'رضيت بالله رباً',
+            text: 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا.',
+            virtue: 'من قالها ثلاثاً كان حقاً على الله أن يرضيه يوم القيامة.',
+            count: 3
+          },
+          {
+            id: 'm8',
+            title: 'حسبي الله لا إله إلا هو',
+            text: 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.',
+            virtue: 'من قالها سبع مرات كفاه الله ما أهمه.',
+            count: 7
+          },
+          {
+            id: 'm9',
+            title: 'يا حي يا قيوم برحمتك أستغيث',
+            text: 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ.',
+            virtue: 'دعاء جامع لصلاح الشأن والتوفيق.',
+            count: 1
+          },
+          {
+            id: 'm10',
+            title: 'اللهم عافني في بدني',
+            text: 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ. اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ، لَا إِلَهَ إِلَّا أَنْتَ.',
+            virtue: 'تقال ثلاث مرات صباحاً ومساءً لطلب العافية.',
+            count: 3
+          },
+          {
+            id: 'm11',
+            title: 'الصلاة على النبي ﷺ',
+            text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.',
+            virtue: 'من صلى على النبي حين يصبح عشراً وحين يمسي عشراً أدركته شفاعته.',
+            count: 10
+          },
+          {
+            id: 'm12',
+            title: 'سبحان الله وبحمده',
+            text: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.',
+            virtue: 'من قالها مائة مرة حُطَّت خطاياه وإن كانت مثل زبد البحر.',
+            count: 100
+          }
+        ],
+        evening: [
+          {
+            id: 'e1',
+            title: 'آية الكرسي',
+            text: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ.',
+            virtue: 'من قالها حين يمسي أُجير من الجن حتى يصبح.',
+            count: 1
+          },
+          {
+            id: 'e2',
+            title: 'المعوذات (الإخلاص والفلق والناس)',
+            text: 'قراءة سورة الإخلاص (قُلْ هُوَ اللَّهُ أَحَدٌ...) وسورة الفلق (قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ...) وسورة الناس (قُلْ أَعُوذُ بِرَبِّ النَّاسِ...).',
+            virtue: 'من قالها ثلاث مرات حين يمسي كفته من كل شيء.',
+            count: 3
+          },
+          {
+            id: 'e3',
+            title: 'أمسينا وأمسى الملك لله',
+            text: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذِهِ اللَّيْلَةِ وَخَيْرَ مَا بَعْدَهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذِهِ اللَّيْلَةِ وَشَرِّ مَا بَعْدَهَا، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.',
+            virtue: 'من أذكار المساء الثابتة في صحيح مسلم.',
+            count: 1
+          },
+          {
+            id: 'e4',
+            title: 'سيد الاستغفار',
+            text: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.',
+            virtue: 'من قالها موقناً بها حين يمسي فمات من ليلته دخل الجنة.',
+            count: 1
+          },
+          {
+            id: 'e5',
+            title: 'اللهم بك أمسينا',
+            text: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ.',
+            virtue: 'ذكر المساء والتفويض لله تعالى.',
+            count: 1
+          },
+          {
+            id: 'e6',
+            title: 'أعوذ بكلمات الله التامات',
+            text: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.',
+            virtue: 'من قالها ثلاثاً حين يمسي لم تضره حمة تلك الليلة.',
+            count: 3
+          },
+          {
+            id: 'e7',
+            title: 'بسم الله الذي لا يضر مع اسمه شيء',
+            text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.',
+            virtue: 'من قالها ثلاثاً لم يضره شيء بإذن الله.',
+            count: 3
+          },
+          {
+            id: 'e8',
+            title: 'رضيت بالله رباً',
+            text: 'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا.',
+            virtue: 'من قالها ثلاثاً كان حقاً على الله أن يرضيه يوم القيامة.',
+            count: 3
+          },
+          {
+            id: 'e9',
+            title: 'حسبي الله لا إله إلا هو',
+            text: 'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ.',
+            virtue: 'من قالها سبع مرات كفاه الله ما أهمه.',
+            count: 7
+          },
+          {
+            id: 'e10',
+            title: 'اللهم عافني في بدني',
+            text: 'اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ. اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ، لَا إِلَهَ إِلَّا أَنْتَ.',
+            virtue: 'تقال ثلاث مرات صباحاً ومساءً لطلب العافية.',
+            count: 3
+          },
+          {
+            id: 'e11',
+            title: 'الصلاة على النبي ﷺ',
+            text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ.',
+            virtue: 'من صلى على النبي حين يمسي عشراً أدركته شفاعته.',
+            count: 10
+          },
+          {
+            id: 'e12',
+            title: 'سبحان الله وبحمده',
+            text: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.',
+            virtue: 'من قالها مائة مرة حُطَّت خطاياه وإن كانت مثل زبد البحر.',
+            count: 100
+          }
+        ]
+      };
+
+      var btnModeAdhkar = document.getElementById('btnModeAdhkar');
+      var btnModeTasbih = document.getElementById('btnModeTasbih');
+      var btnAdhkarMorning = document.getElementById('btnAdhkarMorning');
+      var btnAdhkarEvening = document.getElementById('btnAdhkarEvening');
+      var btnResetAdhkar = document.getElementById('btnResetAdhkar');
+      var adhkarListEl = document.getElementById('adhkarList');
+      var adhkarProgressText = document.getElementById('adhkarProgressText');
+      var adhkarProgressBar = document.getElementById('adhkarProgressBar');
+
+      function getDhikrRemaining(period, item) {
+        var map = state.adhkarProgress[period];
+        if (typeof map[item.id] === 'number') return map[item.id];
+        return item.count;
+      }
+
+      function renderAdhkar() {
+        var period = state.adhkarPeriod;
+        var list = ADHKAR_DATA[period] || [];
+        btnAdhkarMorning.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition ' + (period === 'morning' ? 'tab-active' : 'tab-inactive');
+        btnAdhkarEvening.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition ' + (period === 'evening' ? 'tab-active' : 'tab-inactive');
+
+        var doneCount = 0;
+        var html = list.map(function (item) {
+          var rem = getDhikrRemaining(period, item);
+          var isDone = rem <= 0;
+          if (isDone) doneCount++;
+          return (
+            '<div class="dhikr-card mushaf-card rounded-2xl p-4 sm:p-5 ' + (isDone ? 'is-done' : '') + '" data-dhikr-id="' + item.id + '">' +
+              '<div class="flex items-center justify-between gap-2 mb-2.5">' +
+                '<h3 class="text-sm sm:text-base font-bold" style="color: var(--accent);">' + escapeHtml(item.title) + '</h3>' +
+                '<div class="flex items-center gap-1.5">' +
+                  '<button type="button" data-dhikr-copy="' + item.id + '" class="btn-subtle rounded-lg px-2 py-1 text-[11px] font-semibold">نسخ</button>' +
+                  '<span class="px-3 py-1 rounded-full text-xs font-bold" style="background-color:' + (isDone ? 'var(--accent)' : 'var(--gold-soft)') + '; color:' + (isDone ? '#fff' : 'var(--text-primary)') + ';">' +
+                    (isDone ? 'اكتمل ✓' : 'المتبقي: ' + toArabicDigits(rem)) +
+                  '</span>' +
+                '</div>' +
+              '</div>' +
+              '<p class="quran-text text-xl sm:text-2xl leading-[2.1] mb-2.5">' + escapeHtml(item.text) + '</p>' +
+              '<div class="text-xs pt-2 border-t flex items-center justify-between gap-2" style="border-color: var(--border-color); color: var(--text-secondary);">' +
+                '<span>' + escapeHtml(item.virtue) + '</span>' +
+                '<span class="shrink-0 font-semibold">' + toArabicDigits(item.count - rem) + ' / ' + toArabicDigits(item.count) + '</span>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+
+        adhkarListEl.innerHTML = html;
+        var pct = list.length ? Math.round((doneCount / list.length) * 100) : 0;
+        adhkarProgressText.textContent = toArabicDigits(doneCount) + ' / ' + toArabicDigits(list.length) + ' ذكر مكتمل (' + toArabicDigits(pct) + '٪)';
+        adhkarProgressBar.style.width = pct + '%';
+      }
+
+      btnModeAdhkar.addEventListener('click', function () {
+        state.section = 'adhkar';
+        stopAudio(false);
+        updateModeButtons();
+        renderAdhkar();
+      });
+
+      btnAdhkarMorning.addEventListener('click', function () {
+        state.adhkarPeriod = 'morning';
+        updateModeButtons();
+        renderAdhkar();
+      });
+
+      btnAdhkarEvening.addEventListener('click', function () {
+        state.adhkarPeriod = 'evening';
+        updateModeButtons();
+        renderAdhkar();
+      });
+
+      btnResetAdhkar.addEventListener('click', function () {
+        state.adhkarProgress[state.adhkarPeriod] = {};
+        renderAdhkar();
+        showToast('تمت إعادة ضبط عدادات الأذكار');
+      });
+
+      adhkarListEl.addEventListener('click', function (e) {
+        var copyBtn = e.target.closest('[data-dhikr-copy]');
+        if (copyBtn) {
+          e.stopPropagation();
+          var cid = copyBtn.getAttribute('data-dhikr-copy');
+          var foundCopy = (ADHKAR_DATA[state.adhkarPeriod] || []).find(function (x) { return x.id === cid; });
+          if (foundCopy) copyText(foundCopy.text);
+          return;
+        }
+        var card = e.target.closest('.dhikr-card');
+        if (!card) return;
+        var id = card.getAttribute('data-dhikr-id');
+        var item = (ADHKAR_DATA[state.adhkarPeriod] || []).find(function (x) { return x.id === id; });
+        if (!item) return;
+        var rem = getDhikrRemaining(state.adhkarPeriod, item);
+        if (rem > 0) {
+          state.adhkarProgress[state.adhkarPeriod][id] = rem - 1;
+          try { if (navigator.vibrate) navigator.vibrate(15); } catch (err) {}
+          renderAdhkar();
+        }
+      });
+
+      // ============================================================
+      // 3. Electronic Tasbih (السبحة الإلكترونية)
+      // ============================================================
+      var tasbihChipsEl = document.getElementById('tasbihChips');
+      var tasbihActivePhraseEl = document.getElementById('tasbihActivePhrase');
+      var tasbihCountDisplay = document.getElementById('tasbihCountDisplay');
+      var tasbihTargetDisplay = document.getElementById('tasbihTargetDisplay');
+      var tasbihRoundsDisplay = document.getElementById('tasbihRoundsDisplay');
+      var tasbihTotalDisplay = document.getElementById('tasbihTotalDisplay');
+      var tasbihRing = document.getElementById('tasbihRing');
+      var btnTasbihTap = document.getElementById('btnTasbihTap');
+      var btnTasbihSound = document.getElementById('btnTasbihSound');
+      var btnTasbihReset = document.getElementById('btnTasbihReset');
+      var btnTasbihResetAll = document.getElementById('btnTasbihResetAll');
+      var customDhikrInput = document.getElementById('customDhikrInput');
+      var btnAddCustomDhikr = document.getElementById('btnAddCustomDhikr');
+
+      var tasbihAudioCtx = null;
+      function playBeadClick(isRoundDone) {
+        if (!state.tasbihSound) return;
+        try {
+          if (navigator.vibrate) navigator.vibrate(isRoundDone ? [35, 40, 35] : 18);
+        } catch (e) {}
+        try {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          if (!tasbihAudioCtx) tasbihAudioCtx = new AudioCtx();
+          var osc = tasbihAudioCtx.createOscillator();
+          var gain = tasbihAudioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(isRoundDone ? 660 : 420, tasbihAudioCtx.currentTime);
+          gain.gain.setValueAtTime(0.08, tasbihAudioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, tasbihAudioCtx.currentTime + (isRoundDone ? 0.16 : 0.055));
+          osc.connect(gain);
+          gain.connect(tasbihAudioCtx.destination);
+          osc.start();
+          osc.stop(tasbihAudioCtx.currentTime + (isRoundDone ? 0.17 : 0.06));
+        } catch (e) {}
+      }
+
+      function renderTasbih() {
+        var phrase = state.tasbihPhrases[state.tasbihIndex] || state.tasbihPhrases[0];
+        tasbihActivePhraseEl.textContent = phrase;
+        tasbihCountDisplay.textContent = toArabicDigits(state.tasbihCount);
+        tasbihTargetDisplay.textContent = state.tasbihTarget > 0 ? ('الهدف: ' + toArabicDigits(state.tasbihTarget)) : 'عد مفتوح';
+        tasbihRoundsDisplay.textContent = toArabicDigits(state.tasbihRounds);
+        tasbihTotalDisplay.textContent = toArabicDigits(state.tasbihTotal);
+        btnTasbihSound.textContent = state.tasbihSound ? 'الصوت والاهتزاز: مفعل' : 'الصوت والاهتزاز: صامت';
+
+        var circumference = 603.19;
+        var ratio = state.tasbihTarget > 0 ? Math.min(1, state.tasbihCount / state.tasbihTarget) : ((state.tasbihCount % 33) / 33);
+        tasbihRing.style.strokeDashoffset = String(circumference * (1 - ratio));
+
+        tasbihChipsEl.innerHTML = state.tasbihPhrases.map(function (p, idx) {
+          var active = idx === state.tasbihIndex;
+          return (
+            '<button type="button" data-tasbih-idx="' + idx + '" class="tasbih-chip px-3 py-1.5 rounded-xl text-xs font-semibold transition border ' +
+            (active ? 'tab-active' : 'btn-subtle') + '" style="' + (active ? 'border-color: var(--accent);' : '') + '">' +
+              escapeHtml(p) +
+            '</button>'
+          );
+        }).join('');
+
+        document.querySelectorAll('.tasbih-target-btn').forEach(function (btn) {
+          var t = Number(btn.getAttribute('data-tasbih-target'));
+          btn.className = 'tasbih-target-btn px-3 py-1 rounded-lg text-xs font-bold ' + (t === state.tasbihTarget ? 'tab-active' : 'tab-inactive');
+        });
+      }
+
+      btnModeTasbih.addEventListener('click', function () {
+        state.section = 'tasbih';
+        stopAudio(false);
+        updateModeButtons();
+        renderTasbih();
+      });
+
+      btnTasbihTap.addEventListener('click', function () {
+        state.tasbihCount += 1;
+        state.tasbihTotal += 1;
+        var completedRound = false;
+        if (state.tasbihTarget > 0 && state.tasbihCount >= state.tasbihTarget) {
+          state.tasbihRounds += 1;
+          completedRound = true;
+          showToast('أتممت دورة (' + toArabicDigits(state.tasbihTarget) + ') — تقبّل الله');
+          state.tasbihCount = 0;
+        }
+        playBeadClick(completedRound);
+        btnTasbihTap.classList.add('is-pressed');
+        setTimeout(function () { btnTasbihTap.classList.remove('is-pressed'); }, 110);
+        savePrefs();
+        renderTasbih();
+      });
+
+      tasbihChipsEl.addEventListener('click', function (e) {
+        var chip = e.target.closest('.tasbih-chip');
+        if (!chip) return;
+        state.tasbihIndex = Number(chip.getAttribute('data-tasbih-idx'));
+        state.tasbihCount = 0;
+        savePrefs();
+        renderTasbih();
+      });
+
+      document.querySelectorAll('.tasbih-target-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          state.tasbihTarget = Number(btn.getAttribute('data-tasbih-target'));
+          state.tasbihCount = 0;
+          savePrefs();
+          renderTasbih();
+        });
+      });
+
+      btnTasbihSound.addEventListener('click', function () {
+        state.tasbihSound = !state.tasbihSound;
+        savePrefs();
+        renderTasbih();
+      });
+
+      btnTasbihReset.addEventListener('click', function () {
+        state.tasbihCount = 0;
+        savePrefs();
+        renderTasbih();
+        showToast('تم تصفير العداد الحالي');
+      });
+
+      btnTasbihResetAll.addEventListener('click', function () {
+        state.tasbihCount = 0;
+        state.tasbihRounds = 0;
+        state.tasbihTotal = 0;
+        savePrefs();
+        renderTasbih();
+        showToast('تم تصفير سجل السبحة بالكامل');
+      });
+
+      function addCustomDhikr() {
+        var val = customDhikrInput.value.trim();
+        if (!val) return;
+        if (state.tasbihPhrases.indexOf(val) === -1) {
+          state.tasbihPhrases.push(val);
+        }
+        state.tasbihIndex = state.tasbihPhrases.indexOf(val);
+        state.tasbihCount = 0;
+        customDhikrInput.value = '';
+        savePrefs();
+        renderTasbih();
+        showToast('تمت إضافة الذكر إلى السبحة');
+      }
+
+      btnAddCustomDhikr.addEventListener('click', addCustomDhikr);
+      customDhikrInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') addCustomDhikr();
       });
 
       // Init
